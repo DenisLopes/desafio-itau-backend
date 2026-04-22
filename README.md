@@ -1,5 +1,8 @@
 # Desafio Itaú — Backend
 
+[![CI](https://github.com/DenisLopes/desafio-itau-backend/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/DenisLopes/desafio-itau-backend/actions/workflows/ci.yml)
+[![Docker](https://github.com/DenisLopes/desafio-itau-backend/actions/workflows/docker.yml/badge.svg?branch=main)](https://github.com/DenisLopes/desafio-itau-backend/actions/workflows/docker.yml)
+
 API REST em Java 17 + Spring Boot 3 que recebe transações e expõe estatísticas
 agregadas (count, sum, avg, min, max) sobre uma janela de tempo configurável
 (default 60 segundos, conforme especificação do desafio).
@@ -137,3 +140,27 @@ A suíte cobre:
 - Repositório in-memory (inclusividade da janela, `removerTodas`).
 - Controllers via `MockMvc` (201, 422, 400, 200 no delete).
 - Carga de contexto Spring (`@SpringBootTest`).
+
+## Docker
+
+Imagem multi-stage (JDK p/ build, JRE p/ runtime; usuário não-root; healthcheck no `/actuator/health`):
+
+```bash
+docker build -t desafio-itau-backend:local .
+docker run --rm -p 8080:8080 desafio-itau-backend:local
+```
+
+Imagens são publicadas automaticamente em `ghcr.io/denislopes/desafio-itau-backend` a cada push na `main` e em tags `v*.*.*`:
+
+```bash
+docker run --rm -p 8080:8080 ghcr.io/denislopes/desafio-itau-backend:latest
+```
+
+## CI/CD
+
+Dois workflows em `.github/workflows/`:
+
+| Workflow | Gatilho | O que faz |
+|----------|---------|-----------|
+| `ci.yml` | push e PR em `main` | `./mvnw verify` em JDK 17 com cache Maven; publica `surefire-reports` e o JAR como artifacts. |
+| `docker.yml` | push em `main` e tags `v*.*.*` | Builda a imagem multi-arch (`linux/amd64`, `linux/arm64`) e publica no GHCR com tags `latest`, `sha-<shortsha>` e `{version}`/`{major}.{minor}` em releases. Usa `GITHUB_TOKEN` — sem secrets adicionais. |
